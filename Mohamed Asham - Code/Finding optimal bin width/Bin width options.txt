@@ -1,0 +1,9 @@
+0.01s = 10ms
+0.05s = 50ms
+0.1s = 100ms
+0.5s = 500ms
+1s = 1000ms
+5s = 5000ms
+
+
+so for these heatmaps they are from the PFC and V1 so it combines Shank0 and Shank1 data offset by 400, really should have made this 1000 but i wanted to be able to read the axes but i realise  there might be some overlap. 
