@@ -22,7 +22,7 @@ import logging
 logging.basicConfig(level=logging.DEBUG, format="%(levelname)s - %(message)s")
 
 output_dir = r"C:\Users\mamoh\Desktop\new 7"
-folder_path_main = r"C:\Users\mamoh\PycharmProjects\Trial Project\Research project\NEW_SPIKETIMEFILES"
+folder_path_main = r"C:\Users\mamoh\PycharmProjects\GitHub\iBSc-Research-project\Mohamed Asham - Code\NEW_SPIKETIMEFILES"
 
 #------------------------------------------------------------------------------------------------------------
 def find_matching_files(folder_path):
@@ -42,7 +42,7 @@ def find_matching_files(folder_path):
     for file_name in files:
         match = re.match(patterning, file_name)
         if match:
-            identifier = match.group(1)
+            identifier = match.group(1)      # so this is interesting in the old code it sorts it also by date that way it finds matching dates
             shank = match.group(2)
             if identifier not in grouped_files:
                 grouped_files[identifier] = {"Shank0": {}, "Shank1": {}}
@@ -54,19 +54,16 @@ def find_matching_files(folder_path):
             elif "Behaviour" in file_name:
                 grouped_files[identifier][f"Shank{shank}"]["Behaviour"] = os.path.join(folder_path, file_name)
 
-    # Debugging output for grouped files
-    logging.debug(f"\nGrouped Files:\n{grouped_files}")
+    # logging.debug(f"\nGrouped Files:\n{grouped_files}")
 
-    # Yield only complete sets
     for identifier, shank_data in grouped_files.items():
         if all(key in shank_data["Shank0"] for key in ["SpikeTimes", "SpikeLabels", "Behaviour"]) and \
                 all(key in shank_data["Shank1"] for key in ["SpikeTimes", "SpikeLabels", "Behaviour"]):
-            logging.debug(f"Yielding files for: {identifier}")
+            # logging.debug(f"Yielding files for: {identifier}")
             yield (
                 shank_data["Shank0"]["SpikeTimes"], shank_data["Shank1"]["SpikeTimes"],
                 shank_data["Shank0"]["SpikeLabels"], shank_data["Shank1"]["SpikeLabels"],
-                shank_data["Shank0"]["Behaviour"], shank_data["Shank1"]["Behaviour"]
-            )
+                shank_data["Shank0"]["Behaviour"], shank_data["Shank1"]["Behaviour"]    )
 #------------------------------------------------------------------------------------------------------------
 def load_spike_data(file_path):
     if re.search(r"_SpikeTimes\.csv$", file_path):
@@ -310,7 +307,6 @@ def analyze_spike_data(file_path1, file_path2, spike_labels_1, spike_labels_2, b
     joins them into one dataframe
     3. bin_spikes - the output from combine_spike_data which is spike_data is put into bin_spikes function
     4. calculate_pairwise_correlations - the binned_spikes is then used to find the pairwise correlation
-    5.
     """
     logging.info(f"Processing data with Bin Width: {bin_width}, Clusters: {num_clusters}\n")
 
@@ -365,7 +361,6 @@ def analyze_spike_data(file_path1, file_path2, spike_labels_1, spike_labels_2, b
 
     logging.info(f"""Analysis complete for {extracted_id1} & {extracted_id2}
 ----------------------------------------------------------------------------------------\n""")
-
 def shutdown_computer():
     print("Shutting down the computer...")
     os.system("shutdown /s /t 1")
@@ -383,17 +378,10 @@ cluster_numer = [2]
 
 for num in cluster_numer:
     for values in bin_widths:
-        seen_identifiers = set()  # Track already processed identifiers
         for files in find_matching_files(folder_path_main):
             if None in files:
                 logging.warning("Skipping this iteration due to missing files...")
                 continue
-
-            identifier = files[0].split("_")[0]  # Extract M240xx
-            if identifier in seen_identifiers:
-                logging.warning(f"Skipping duplicate processing for {identifier}")
-                continue
-            seen_identifiers.add(identifier)
 
             spike_times0, spike_times1, spike_labels0, spike_labels1, behaviour0, behaviour1 = files
 

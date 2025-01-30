@@ -11,11 +11,12 @@ import re
 import os
 import pandas as pd
 import numpy as np
+import logging
 
+output_dir = r"C:\Users\mamoh\PycharmProjects\GitHub\iBSc-Research-project\Mohamed Asham - Code\Result of SPIKETIMEFILES"
+folder_path_main = r"C:\Users\mamoh\PycharmProjects\GitHub\iBSc-Research-project\Mohamed Asham - Code\SPIKETIMEFILES"
 
-output_dir = r"C:\Users\mamoh\Desktop\new"
-folder_path_main = r"C:\Users\mamoh\PycharmProjects\Trial Project\Research project\SPIKETIMEFILES"
-
+logging.basicConfig(level=logging.DEBUG, format="%(levelname)s - %(message)s")
 
 #---------------------------------------------------------------------------------
 def find_matching_files(folder_path):
@@ -245,31 +246,59 @@ def visualize_all_cross_correlogram_components(cross_corr_results, units, lags, 
 
 #---------------------------------------------------------------------------------
 def analyze_spike_data(file_path1, file_path2=None, bin_width = 0, num_clusters = 0, compute_correlograms=False):
+
+    logging.info(f"Processing data with Bin Width: {bin_width}, Clusters: {num_clusters}\n")
+
+    logging.info("Loading and Combining Spike Data with Labels...\n")
     if file_path2:
-        print(f"Combining spike data from {file_path1} and {file_path2}...")
+        # logging.info(f"Combining spike data from {file_path1} and {file_path2}...")
         spike_data = combine_spike_data(file_path1, file_path2)
     else:
-        print(f"Loading spike data from {file_path1}...")
+        # logging.info(f"Loading spike data from {file_path1}...")
         spike_data = load_spike_data(file_path1)
-    binned_spikes = bin_spikes(spike_data, bin_width=bin_width)
 
-    print("Calculating pairwise correlation matrix...")
+    def extract_mouse_id(file_path):
+        pattern = r"M240(\d+)_(\d{8}_File\d+)_Shank(\d+)"
+        match = re.search(pattern, file_path)
+        return f"{match.group(1)}_Shank_{match.group(3)}" if match else "UNKNOWN"
+
+    extracted_id1 = extract_mouse_id(file_path1)
+    extracted_id2 = extract_mouse_id(file_path2)
+
+    logging.debug(f"SpikeTimes 1:  {extracted_id1} --- SpikeTimes 2:  {extracted_id2}\n")
+
+    logging.debug("Combined Spike Data (First & Last 5 Rows):\n%s\n", pd.concat([spike_data.head(), spike_data.tail()]))
+
+    logging.info("Binning Spike Data...\n")
+    binned_spikes = bin_spikes(spike_data, bin_width=bin_width)
+    sample_units = list(binned_spikes.keys())[:5]
+    log_messages = []
+    logging.debug("Example of Binned Spike Data (First 5 Units):")
+    for unit in sample_units:
+        log_messages.append(f"Unit {unit}: {binned_spikes[unit][:10]}")
+    logging.debug("\n        ".join(log_messages) + "\n")
+
+    logging.info("Calculating Pairwise Correlations...\n")
     correlation_matrix, correlations = calculate_pairwise_correlations(binned_spikes)
-    # print("Visualizing pairwise correlation matrix...")
+    logging.debug("Pairwise Correlation Matrix (First & Last 5 Rows):\n%s\n",
+                  pd.concat([pd.DataFrame(correlation_matrix).head(), pd.DataFrame(correlation_matrix).tail()]))
+
+    # logging.info("Visualizing pairwise correlation matrix...\n")
     # visualise_correlation_matrix(correlations, list(binned_spikes.keys()), font_size=2, bin_width=bin_width)
 
     if compute_correlograms:
-        print("Calculating and visualizing cross-correlograms...")
+        logging.info("Calculating and visualizing cross-correlograms...")
         avg_corr_matrix, cross_corr_results, lags = calculate_and_visualize_cross_correlograms(
-            binned_spikes, max_lag=20, bin_width=bin_width
-        )
+            binned_spikes, max_lag=20, bin_width=bin_width)
         visualize_all_cross_correlogram_components(cross_corr_results, list(binned_spikes.keys()), lags,
                                                    bin_width=bin_width)
 
-    print("Clustering and visualising pairwise correlation matrix...")
-    cluster_neurons(correlation_matrix, num_clusters=num_clusters, bin_width=bin_width, units=list(binned_spikes.keys()))
+    # logging.info("Clustering and visualising pairwise correlation matrix...")
+    # cluster_neurons(correlation_matrix, num_clusters=num_clusters, bin_width=bin_width, units=list(binned_spikes.keys()))
 
-    print("Analysis complete.")
+    logging.info(f"""Analysis complete for {extracted_id1} & {extracted_id2}
+----------------------------------------------------------------------------------------\n""")
+
 def shutdown_computer():
     print("Shutting down the computer...")
     os.system("shutdown /s /t 1")
@@ -282,7 +311,7 @@ pattern = r"M240(\d{2})"
 #
 # cluster_numer = [2, 3, 4]
 
-bin_widths = [0.05, 0.01, 0.1, 0.5, 1, 5, 10]
+bin_widths = [10]
 
 cluster_numer = [2]
 
@@ -291,7 +320,7 @@ for num in cluster_numer:
         print(f"Processing with bin width: {values}")
 
         for file_path1, file_path2 in find_matching_files(folder_path_main):
-            print(f"Processing pair: {file_path1} and {file_path2}")
+            # print(f"Processing pair: {file_path1} and {file_path2}")
 
             try:
                 match1 = re.search(pattern, file_path1)
